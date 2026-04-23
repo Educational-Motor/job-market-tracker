@@ -1,0 +1,144 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.db_connection import get_connection
+from datetime import datetime, date
+import re
+
+SKILLS = [
+    # Languages
+    "Python", "SQL", "Java", "Scala", "Go", "JavaScript", "TypeScript",
+    "C++", "C#", "Rust", "Bash", "MATLAB", "SAS", "Julia", "VBA", "Perl",
+
+    # Data engineering frameworks and orchestration
+    "Spark", "Kafka", "Airflow", "dbt", "Flink", "Hadoop", "Hive",
+    "Prefect", "Luigi", "MLflow", "Dagster", "Fivetran", "Airbyte",
+    "Polars", "DuckDB", "Trino", "Presto", "Delta Lake", "Apache Iceberg",
+
+    # Cloud platforms
+    "AWS", "GCP", "Azure", "Google Cloud",
+
+    # Cloud services
+    "S3", "Glue", "Athena", "EMR", "Lambda",
+    "Azure Data Factory", "Azure Synapse",
+    "Dataflow", "Pub/Sub",
+
+    # Databases and warehouses
+    "PostgreSQL", "MySQL", "MongoDB", "Snowflake", "Redshift", "BigQuery",
+    "Databricks", "Cassandra", "Redis", "Elasticsearch", "Oracle",
+    "DynamoDB", "ClickHouse", "SQL Server", "Teradata", "Vertica", "MariaDB",
+
+    # DevOps and infrastructure
+    "Docker", "Kubernetes", "Terraform", "Ansible", "Linux", "Git",
+    "Jenkins", "GitHub Actions", "GitLab", "CI/CD", "Helm",
+
+    # BI and visualization
+    "Tableau", "Power BI", "Looker", "Grafana", "Excel",
+    "Metabase", "Superset", "Alteryx", "Qlik", "SSRS", "SSIS", "Power Query",
+
+    # ML and AI
+    "Pandas", "NumPy", "scikit-learn", "TensorFlow", "PyTorch",
+    "XGBoost", "LightGBM", "Keras", "spaCy", "Hugging Face", "LangChain",
+
+    # Finance-specific
+    "Bloomberg", "QuickBooks", "SAP", "Workday", "Salesforce",
+    "Hyperion", "NetSuite",
+]
+
+REMOTE_PATTERNS = [r"fully remote", r"100%\s*remote", r"work from home", r"\bwfh\b", r"\bremote\b"]
+HYBRID_PATTERNS = [r"\bhybrid\b"]
+ONSITE_PATTERNS = [r"\bon.?site\b", r"in.office", r"in the office"]
+
+
+def extract_skills(description):
+    if not description:
+        return []
+    found = []
+    for skill in SKILLS:
+        pattern = r"\b" + re.escape(skill) + r"\b"
+        if re.search(pattern, description, re.IGNORECASE):
+            found.append(skill)
+    return found
+
+
+def extract_work_type(description):
+    if not description:
+        return None
+    text = description.lower()
+    for pattern in HYBRID_PATTERNS:
+        if re.search(pattern, text):
+            return "hybrid"
+    for pattern in REMOTE_PATTERNS:
+        if re.search(pattern, text):
+            return "remote"
+    for pattern in ONSITE_PATTERNS:
+        if re.search(pattern, text):
+            return "on-site"
+    return None
+
+
+def parse_date(date_str):
+    if not date_str:
+        return None
+    try:
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00")).date()
+    except ValueError:
+        return None
+
+
+def run():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # only grab rows that don't exist in silver to avoid duplicates
+    cursor.execute("""
+        SELECT job_id, title, description, location, company,
+               salary_min, salary_max, salary_is_predicted,
+               created, category, country
+        FROM bronze_job_postings
+        WHERE job_id NOT IN (SELECT job_id FROM silver_job_postings)
+    """)
+    rows = cursor.fetchall()
+
+    if not rows:
+        print("No new records to transform.")
+        conn.close()
+        return
+
+    insert_query = """
+        INSERT INTO silver_job_postings (
+            job_id, title, description, location, company,
+            salary_min, salary_max, salary_is_predicted,
+            created, category, country,
+            work_type, skills, transformed_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (job_id) DO NOTHING
+    """
+
+    transformed_at = datetime.now()
+
+    for row in rows:
+        (job_id, title, description, location, company,
+         salary_min, salary_max, salary_is_predicted,
+         created, category, country) = row
+
+        salary_is_predicted_bool = salary_is_predicted == "1" if salary_is_predicted is not None else None
+        created_date = parse_date(created)
+        work_type = extract_work_type(description)
+        skills = extract_skills((title or "") + " " + (description or ""))
+
+        cursor.execute(insert_query, (
+            job_id, title, description, location, company,
+            salary_min, salary_max, salary_is_predicted_bool,
+            created_date, category, country,
+            work_type, skills, transformed_at
+        ))
+
+    conn.commit()
+    print(f"{len(rows)} records transformed to Silver.")
+    conn.close()
+
+
+if __name__ == "__main__":
+    run()

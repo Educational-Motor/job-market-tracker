@@ -24,15 +24,15 @@ categories = ["it-jobs", "accounting-finance-jobs"]
 conn = get_connection() # open loop connection to the database
 cursor = conn.cursor()
 query = """
-INSERT INTO bronze_job_postings (job_id, title, description,location, company, salary_min, salary_max, salary_is_predicted, created, category, ingested_at, country) 
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+INSERT INTO bronze_job_postings (job_id, title, description, location, company, salary_min, salary_max, salary_is_predicted, created, category, ingested_at, country, redirect_url, contract_type)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 ON CONFLICT (job_id) DO NOTHING
 """
 
 
 for country in countries:
     for category in categories:
-        params = {"app_id" : APP_ID, "app_key": APP_KEY, "category" : category}
+        params = {"app_id": APP_ID, "app_key": APP_KEY, "category": category, "results_per_page": 50}
         url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
         response = requests.get(url, params=params)
         if response.status_code != 200:
@@ -46,7 +46,7 @@ for country in countries:
 
             # execute sql to place data into table
             
-            cursor.execute(query, (job["id"], job["title"], job["description"], job["location"]["display_name"], job["company"]["display_name"], job.get("salary_min"), job.get("salary_max"), job["salary_is_predicted"], job["created"], job["category"]["tag"], job["ingested_at"], job["country"]))
+            cursor.execute(query, (job["id"], job["title"], job["description"], job["location"]["display_name"], job["company"]["display_name"], job.get("salary_min"), job.get("salary_max"), job["salary_is_predicted"], job["created"], job["category"]["tag"], job["ingested_at"], job["country"], job.get("redirect_url"), job.get("contract_type")))
             
         # print(f"{country} / {category}: {len(data['results'])} jobs ingested")
         conn.commit()
