@@ -4,6 +4,8 @@ import os
 
 load_dotenv()
 
+# Returns a psycopg2 connection using credentials from the .env file.
+# Import this wherever you need a database connection instead of repeating the connection logic.
 def get_connection():
     connection = psycopg2.connect(
         host=os.getenv("DB_HOST"),

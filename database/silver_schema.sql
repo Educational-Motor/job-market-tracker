@@ -1,3 +1,5 @@
+-- Cleaned and enriched version of Bronze. Types are converted, skills are extracted,
+-- and work type is detected from the description. Bronze rows are never deleted or modified.
 CREATE TABLE IF NOT EXISTS silver_job_postings (
     job_id              TEXT PRIMARY KEY,
     title               TEXT,
@@ -6,11 +8,11 @@ CREATE TABLE IF NOT EXISTS silver_job_postings (
     company             TEXT,
     salary_min          FLOAT,
     salary_max          FLOAT,
-    salary_is_predicted BOOLEAN,
-    created             DATE,
+    salary_is_predicted BOOLEAN,           -- Converted from "0"/"1" string in Bronze.
+    created             DATE,              -- Converted from ISO string in Bronze.
     category            TEXT,
     country             TEXT,
-    work_type           TEXT,
-    skills              TEXT[],
-    transformed_at      TIMESTAMP
+    work_type           TEXT,              -- "remote", "hybrid", "on-site", or NULL if not mentioned.
+    skills              TEXT[],            -- PostgreSQL array of matched skill names from title + description.
+    transformed_at      TIMESTAMP          -- When this row was processed by Silver.
 );

@@ -5,6 +5,8 @@ from utils.db_connection import get_connection
 from datetime import datetime, date
 import re
 
+# Skills we scan for in job postings. Keyword matching was chosen over NLP because
+# this list is bounded and known, making it transparent and easy to audit over time.
 SKILLS = [
     # Languages
     "Python", "SQL", "Java", "Scala", "Go", "JavaScript", "TypeScript",
@@ -49,6 +51,10 @@ REMOTE_PATTERNS = [r"fully remote", r"100%\s*remote", r"work from home", r"\bwfh
 HYBRID_PATTERNS = [r"\bhybrid\b"]
 ONSITE_PATTERNS = [r"\bon.?site\b", r"in.office", r"in the office"]
 
+# Skills that need exact case matching to avoid false positives.
+# "Go" is a common English word and would match finance job descriptions without this.
+CASE_SENSITIVE_SKILLS = {"Go"}
+
 
 def extract_skills(description):
     if not description:
@@ -56,8 +62,13 @@ def extract_skills(description):
     found = []
     for skill in SKILLS:
         pattern = r"\b" + re.escape(skill) + r"\b"
-        if re.search(pattern, description, re.IGNORECASE):
-            found.append(skill)
+        # Most skills are case-insensitive, but short ambiguous words like "Go" need exact casing.
+        if skill in CASE_SENSITIVE_SKILLS:
+            if re.search(pattern, description):
+                found.append(skill)
+        else:
+            if re.search(pattern, description, re.IGNORECASE):
+                found.append(skill)
     return found
 
 
@@ -65,6 +76,7 @@ def extract_work_type(description):
     if not description:
         return None
     text = description.lower()
+    # Check hybrid before remote because "hybrid remote" should resolve to hybrid, not remote.
     for pattern in HYBRID_PATTERNS:
         if re.search(pattern, text):
             return "hybrid"
@@ -90,7 +102,7 @@ def run():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # only grab rows that don't exist in silver to avoid duplicates
+    # Only pull Bronze rows that haven't been transformed yet.
     cursor.execute("""
         SELECT job_id, title, description, location, company,
                salary_min, salary_max, salary_is_predicted,
@@ -116,6 +128,7 @@ def run():
         ON CONFLICT (job_id) DO NOTHING
     """
 
+    # Set once so all rows in this batch share the same timestamp, making batch runs easy to identify.
     transformed_at = datetime.now()
 
     for row in rows:
@@ -126,6 +139,9 @@ def run():
         salary_is_predicted_bool = salary_is_predicted == "1" if salary_is_predicted is not None else None
         created_date = parse_date(created)
         work_type = extract_work_type(description)
+
+        # Scan title and description combined because Adzuna truncates descriptions at around 500 characters.
+        # Skills mentioned only in the title would otherwise be missed.
         skills = extract_skills((title or "") + " " + (description or ""))
 
         cursor.execute(insert_query, (
