@@ -5,3 +5,5 @@ __pycache__/
 CLAUDE.md
 .claude/
 test.py
+run_pipeline.bat
+*.log

@@ -60,10 +60,10 @@ with col2:
 # Filtering to one date avoids duplicate bars when multiple snapshots exist.
 latest_date = df_skill_filtered["snapshot_date"].max()
 st.subheader(f"Latest Top Skills Demand - {latest_date.strftime('%Y-%m-%d')}")
-df_skill_top = df_skill_filtered[df_skill_filtered["snapshot_date"] == latest_date].sort_values(by="pct_of_postings", ascending=True).head(10)
+df_skill_top = df_skill_filtered[df_skill_filtered["snapshot_date"] == latest_date].sort_values(by="pct_of_postings", ascending=False).head(15).sort_values(by="pct_of_postings", ascending=True)  # Sort for high count at the top of horizontal bar chart
 sample_size = df_skill_top["total_postings"].iloc[0]
 
-fig_skill = px.bar(df_skill_top, x="pct_of_postings", y="skill", orientation="h", title="Top 10 Skills by Percentage of Job Postings", labels={"pct_of_postings": "% of Job Postings", "skill": "Skill"})
+fig_skill = px.bar(df_skill_top, x="pct_of_postings", y="skill", orientation="h", title="Top 15 Skills by Percentage of Job Postings", labels={"pct_of_postings": "% of Job Postings", "skill": "Skill"})
 fig_skill.update_layout(xaxis_tickformat=".2f")
 st.plotly_chart(fig_skill, use_container_width=True)
 
