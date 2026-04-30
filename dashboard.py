@@ -14,7 +14,7 @@ def load_role_demand():
     df = pd.read_sql(query, conn)
     conn.close()
     df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], utc=True).dt.tz_convert(None).dt.normalize()
-    return df
+    return df.sort_values("snapshot_date")
 
 def load_salary_trend():
     conn = get_connection()
@@ -22,7 +22,7 @@ def load_salary_trend():
     df = pd.read_sql(query, conn)
     conn.close()
     df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], utc=True).dt.tz_convert(None).dt.normalize()
-    return df
+    return df.sort_values("snapshot_date")
 
 def load_skill_frequency():
     conn = get_connection()
@@ -30,7 +30,7 @@ def load_skill_frequency():
     df = pd.read_sql(query, conn)
     conn.close()
     df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], utc=True).dt.tz_convert(None).dt.normalize()
-    return df
+    return df.sort_values("snapshot_date")
 
 # Load all three Gold tables once at startup.
 df_role = load_role_demand()
