@@ -49,6 +49,8 @@ df_role_filtered = df_role[(df_role["country"] == selected_country) & (df_role["
 df_salary_filtered = df_salary[(df_salary["country"] == selected_country) & (df_salary["category"] == selected_category)]
 df_skill_filtered = df_skill[(df_skill["country"] == selected_country) & (df_skill["category"] == selected_category)]
 
+st.dataframe(df_role_filtered)
+
 # Trend charts side by side.
 col1, col2 = st.columns(2)
 with col1:
