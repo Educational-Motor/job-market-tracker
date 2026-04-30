@@ -18,7 +18,7 @@ if APP_ID is None or APP_KEY is None:
 
 # We pull from two countries and two job categories, so four API calls per run.
 countries = ["us", "ca"]
-categories = ["it-jobs", "accounting-finance-jobs"]
+categories = ["it-jobs", "accounting-finance-jobs", "engineering-jobs"]
 
 # One connection for the entire run. Opening a new connection per iteration is unnecessary overhead.
 conn = get_connection()
