@@ -13,6 +13,7 @@ def load_role_demand():
     query = "SELECT snapshot_date, category, country, total_postings FROM gold_role_demand"
     df = pd.read_sql(query, conn)
     conn.close()
+    df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], utc=True).dt.tz_convert(None).dt.normalize()
     return df
 
 def load_salary_trend():
@@ -20,6 +21,7 @@ def load_salary_trend():
     query = "SELECT snapshot_date, category, country, avg_midpoint FROM gold_salary_trend"
     df = pd.read_sql(query, conn)
     conn.close()
+    df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], utc=True).dt.tz_convert(None).dt.normalize()
     return df
 
 def load_skill_frequency():
@@ -27,6 +29,7 @@ def load_skill_frequency():
     query = "SELECT snapshot_date, skill, country, category, pct_of_postings, skill_posting_count, total_postings FROM gold_skill_frequency"
     df = pd.read_sql(query, conn)
     conn.close()
+    df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], utc=True).dt.tz_convert(None).dt.normalize()
     return df
 
 # Load all three Gold tables once at startup.
