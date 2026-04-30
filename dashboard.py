@@ -3,8 +3,8 @@ import plotly.express as px
 import pandas as pd
 from utils.db_connection import get_connection
 
-st.set_page_config(page_title="FinTech Market Dashboard", layout="wide")
-st.title("FinTech Market Dashboard")
+st.set_page_config(page_title="Job Industry Trend Tracker", layout="wide")
+st.title("Job Industry Trend Tracker")
 
 # Each function loads one Gold table in full. Filtering happens in Python after loading,
 # so changing the sidebar doesn't trigger a new database query each time.
