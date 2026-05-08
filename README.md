@@ -27,7 +27,7 @@ Adzuna API > Bronze (raw) > Silver (cleaned) > Gold (aggregated) > Streamlit Das
 - **Gold** — Daily snapshots of skill frequency, salary trends, and posting volume by country and by category.
 
 **Infrastructure:**
-- Pipeline runs locally on Windows via Task Scheduler, writes to Supabase (hosted PostgreSQL on AWS).
+- Pipeline runs on GitHub Actions (daily cron + manual dispatch), writes to Supabase (hosted PostgreSQL on AWS).
 - Dashboard deployed on Streamlit Community Cloud, reads from Supabase
 - Historical data accumulates from April 2026 forward
 
@@ -40,7 +40,7 @@ Adzuna API > Bronze (raw) > Silver (cleaned) > Gold (aggregated) > Streamlit Das
 | Ingestion | Python, Requests, Adzuna API |
 | Storage | PostgreSQL (Supabase) |
 | Transformation | Python, psycopg2, Regex |
-| Orchestration | Windows Task Scheduler |
+| Orchestration | GitHub Actions |
 | Dashboard | Streamlit, Plotly, Pandas |
 | Deployment | Streamlit Community Cloud, Supabase |
 
@@ -58,6 +58,7 @@ Adzuna API > Bronze (raw) > Silver (cleaned) > Gold (aggregated) > Streamlit Das
 ## Project Structure
 
 ```
+├── .github/workflows/pipeline.yml      # GitHub Actions: daily pipeline schedule
 ├── ingestion/adzuna_ingest.py          # Bronze: pulls from Adzuna API
 ├── transformation/silver_transform.py  # Silver: cleans and extracts skills
 ├── gold/gold_transform.py              # Gold: daily aggregation snapshots
