@@ -51,7 +51,7 @@ for country in countries:
             # salary_min, salary_max, redirect_url, and contract_type are not always present, so we use .get().
             cursor.execute(query, (
                 job["id"], job["title"], job["description"],
-                job["location"]["display_name"], job["company"]["display_name"],
+                job.get("location", {}).get("display_name"), job.get("company", {}).get("display_name"),
                 job.get("salary_min"), job.get("salary_max"),
                 job["salary_is_predicted"], job["created"],
                 job["category"]["tag"], job["ingested_at"], job["country"],
